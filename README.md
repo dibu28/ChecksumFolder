@@ -19,4 +19,5 @@ operation can be resumed.
 CheckSumFolder -verify -dir /path/to/dir -list hashes.txt [-verbose]
 ```
 Use `-verbose` to print the status of every file. Without it, only mismatches
-are printed or a message that everything matches.
+are printed or a message that everything matches. Verification runs in
+parallel across all CPU cores to speed up processing on large directory trees.
