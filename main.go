@@ -13,6 +13,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 func main() {
@@ -21,23 +23,24 @@ func main() {
 	verify := flag.Bool("verify", false, "verify mode")
 	list := flag.String("list", "", "list file for verify mode")
 	verbose := flag.Bool("verbose", false, "verbose verify output")
+	progress := flag.Bool("progress", false, "show progress updates")
 	flag.Parse()
 
 	if *verify {
 		if *list == "" {
 			log.Fatal("-list required in verify mode")
 		}
-		if err := verifyChecksums(*dir, *list, *verbose); err != nil {
+		if err := verifyChecksums(*dir, *list, *verbose, *progress); err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		if err := generateChecksums(*dir, *out); err != nil {
+		if err := generateChecksums(*dir, *out, *progress); err != nil {
 			log.Fatal(err)
 		}
 	}
 }
 
-func generateChecksums(dir, output string) error {
+func generateChecksums(dir, output string, progress bool) error {
 	processed := map[string]bool{}
 	if f, err := os.Open(output); err == nil {
 		scanner := bufio.NewScanner(f)
@@ -58,6 +61,22 @@ func generateChecksums(dir, output string) error {
 	defer file.Close()
 	mu := sync.Mutex{}
 
+	var paths []string
+	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && !processed[path] {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	total := len(paths)
+	var processedCount int64
+
 	jobs := make(chan string)
 	wg := sync.WaitGroup{}
 	workers := runtime.NumCPU()
@@ -69,40 +88,42 @@ func generateChecksums(dir, output string) error {
 				hash, err := hashFile(path)
 				if err != nil {
 					log.Printf("%v", err)
-					continue
+				} else {
+					line := fmt.Sprintf("%s\t%s\n", hash, path)
+					mu.Lock()
+					if _, err := file.WriteString(line); err == nil {
+						file.Sync()
+					}
+					mu.Unlock()
 				}
-				line := fmt.Sprintf("%s\t%s\n", hash, path)
-				mu.Lock()
-				if _, err := file.WriteString(line); err == nil {
-					file.Sync()
-				}
-				mu.Unlock()
+				atomic.AddInt64(&processedCount, 1)
 			}
 		}()
 	}
 
-	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() {
-			if !processed[path] {
-				jobs <- path
+	var ticker *time.Ticker
+	if progress && total > 0 {
+		ticker = time.NewTicker(time.Second)
+		go func() {
+			for range ticker.C {
+				fmt.Printf("%d/%d\n", atomic.LoadInt64(&processedCount), total)
 			}
-		}
-		return nil
-	})
-	if err != nil {
-		close(jobs)
-		wg.Wait()
-		return err
+		}()
+	}
+
+	for _, p := range paths {
+		jobs <- p
 	}
 	close(jobs)
 	wg.Wait()
+	if ticker != nil {
+		ticker.Stop()
+		fmt.Printf("%d/%d\n", processedCount, total)
+	}
 	return nil
 }
 
-func verifyChecksums(dir, listfile string, verbose bool) error {
+func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 	expected := map[string]string{}
 	f, err := os.Open(listfile)
 	if err != nil {
@@ -118,7 +139,24 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 	}
 	f.Close()
 
-	var total, match, mismatch int
+	var match, mismatch int
+
+	var paths []string
+	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		paths = append(paths, path)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	total := len(paths)
+	var processedCount int64
 
 	type result struct {
 		path   string
@@ -148,13 +186,13 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 					r.ok = true
 				}
 				results <- r
+				atomic.AddInt64(&processedCount, 1)
 			}
 		}()
 	}
 
 	go func() {
 		for r := range results {
-			total++
 			if r.ok {
 				match++
 			} else {
@@ -172,21 +210,24 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 		close(results)
 	}()
 
-	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		jobs <- path
-		return nil
-	})
+	var ticker *time.Ticker
+	if progress && total > 0 {
+		ticker = time.NewTicker(time.Second)
+		go func() {
+			for range ticker.C {
+				fmt.Printf("%d/%d\n", atomic.LoadInt64(&processedCount), total)
+			}
+		}()
+	}
+
+	for _, p := range paths {
+		jobs <- p
+	}
 	close(jobs)
-	if err != nil {
-		for range results {
-		}
-		return err
+	wg.Wait()
+	if ticker != nil {
+		ticker.Stop()
+		fmt.Printf("%d/%d\n", processedCount, total)
 	}
 
 	<-done
