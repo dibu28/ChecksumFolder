@@ -125,27 +125,50 @@ func generateChecksums(dir, output string, progress bool) error {
 }
 
 func verifyChecksums(dir, listfile string, verbose, progress bool) error {
-	expected := map[string]string{}
-	var paths []string
+	type entry struct {
+		hash string
+		path string
+	}
+	var entries []entry
+
 	f, err := os.Open(listfile)
 	if err != nil {
 		return err
 	}
 	scanner := bufio.NewScanner(f)
+	var prefix string
+	first := true
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.SplitN(line, "\t", 2)
 		if len(parts) == 2 {
 			p := strings.ReplaceAll(parts[1], "\\", "/")
-			name := path.Base(p)
-			expected[name] = parts[0]
-			paths = append(paths, name)
+			if first {
+				prefix = p
+				first = false
+			} else {
+				prefix = commonPrefix(prefix, p)
+			}
+			entries = append(entries, entry{hash: parts[0], path: p})
 		}
 	}
 	f.Close()
 
-	var match, mismatch int
+	if i := strings.LastIndex(prefix, "/"); i >= 0 {
+		prefix = prefix[:i+1]
+	} else {
+		prefix = ""
+	}
 
+	expected := map[string]string{}
+	var paths []string
+	for _, e := range entries {
+		rel := strings.TrimPrefix(e.path, prefix)
+		expected[rel] = e.hash
+		paths = append(paths, rel)
+	}
+
+	var match, mismatch int
 	total := len(paths)
 	var processedCount int64
 
@@ -244,4 +267,16 @@ func hashFile(path string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func commonPrefix(a, b string) string {
+	max := len(a)
+	if len(b) < max {
+		max = len(b)
+	}
+	i := 0
+	for i < max && a[i] == b[i] {
+		i++
+	}
+	return a[:i]
 }
