@@ -135,40 +135,44 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		return err
 	}
 	scanner := bufio.NewScanner(f)
-	var prefix string
-	first := true
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.SplitN(line, "\t", 2)
 		if len(parts) == 2 {
-			p := strings.ReplaceAll(parts[1], "\\", "/")
-			if first {
-				prefix = p
-				first = false
-			} else {
-				prefix = commonPrefix(prefix, p)
-			}
+			// Normalize path from list file to use OS-specific separators
+			// and ensure it's clean.
+			p := filepath.Clean(parts[1])
 			entries = append(entries, entry{hash: parts[0], path: p})
 		}
 	}
 	f.Close()
 
-	if i := strings.LastIndex(prefix, "/"); i >= 0 {
-		prefix = prefix[:i+1]
-	} else {
-		prefix = ""
-	}
-
 	expected := map[string]string{}
-	var paths []string
+	var pathsToProcess []string // This will store the actual paths to hash
+
 	for _, e := range entries {
-		rel := strings.TrimPrefix(e.path, prefix)
-		expected[rel] = e.hash
-		paths = append(paths, rel)
+		var actualPath string
+		if filepath.IsAbs(e.path) {
+			actualPath = e.path
+		} else {
+			// Path from list file is relative.
+			// Check if it starts with the base name of the -dir flag.
+			dirBase := filepath.Base(dir)
+			// Ensure dirBase is not empty and e.path actually starts with it
+			if dirBase != "" && strings.HasPrefix(e.path, dirBase+string(filepath.Separator)) {
+				// If it does, trim the base name to avoid duplication
+				actualPath = filepath.Join(dir, strings.TrimPrefix(e.path, dirBase+string(filepath.Separator)))
+			} else {
+				// Otherwise, just join it with dir
+				actualPath = filepath.Join(dir, e.path)
+			}
+		}
+		expected[actualPath] = e.hash // Store expected hash keyed by actual path
+		pathsToProcess = append(pathsToProcess, actualPath)
 	}
 
 	var match, mismatch int
-	total := len(paths)
+	total := len(pathsToProcess)
 	var processedCount int64
 
 	type result struct {
@@ -186,9 +190,8 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for name := range jobs {
-				path := filepath.Join(dir, name)
-				exp, ok := expected[name]
+			for path := range jobs { // 'path' here is the actual path to hash
+				exp, ok := expected[path] // Lookup using the actual path
 				hash, hErr := hashFile(path)
 				r := result{path: path}
 				if hErr != nil {
@@ -234,7 +237,7 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		}()
 	}
 
-	for _, p := range paths {
+	for _, p := range pathsToProcess { // Send actual paths to jobs channel
 		jobs <- p
 	}
 	close(jobs)
@@ -266,16 +269,4 @@ func hashFile(path string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-func commonPrefix(a, b string) string {
-	max := len(a)
-	if len(b) < max {
-		max = len(b)
-	}
-	i := 0
-	for i < max && a[i] == b[i] {
-		i++
-	}
-	return a[:i]
 }
