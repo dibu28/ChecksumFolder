@@ -25,6 +25,11 @@ CheckSumFolder -dir /path/to/dir -out hashes.txt -progress
 ```
 CheckSumFolder -verify -dir /path/to/dir -list hashes.txt [-verbose]
 ```
+The `-dir` flag specifies the folder containing the files to verify. Each line
+in `hashes.txt` may contain absolute paths from a different system. During
+verification the program removes any common directory prefix from the paths in
+the list and joins the remainder with the directory provided via `-dir`. This
+allows verifying files across machines even when the root folders differ.
 Use `-verbose` to print the status of every file. Without it, only mismatches
 are printed or a message that everything matches. Add `-progress` to show
 verification progress. Verification runs in parallel across all CPU cores to

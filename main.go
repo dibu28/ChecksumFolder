@@ -124,37 +124,51 @@ func generateChecksums(dir, output string, progress bool) error {
 }
 
 func verifyChecksums(dir, listfile string, verbose, progress bool) error {
-	expected := map[string]string{}
+	type entry struct {
+		hash string
+		path string
+	}
+	var entries []entry
+
 	f, err := os.Open(listfile)
 	if err != nil {
 		return err
 	}
 	scanner := bufio.NewScanner(f)
+	var prefix string
+	first := true
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.SplitN(line, "\t", 2)
 		if len(parts) == 2 {
-			expected[parts[1]] = parts[0]
+			p := strings.ReplaceAll(parts[1], "\\", "/")
+			if first {
+				prefix = p
+				first = false
+			} else {
+				prefix = commonPrefix(prefix, p)
+			}
+			entries = append(entries, entry{hash: parts[0], path: p})
 		}
 	}
 	f.Close()
 
+	if i := strings.LastIndex(prefix, "/"); i >= 0 {
+		prefix = prefix[:i+1]
+	} else {
+		prefix = ""
+	}
+
+	expected := map[string]string{}
+	var paths []string
+	for _, e := range entries {
+		rel := strings.TrimPrefix(e.path, prefix)
+		expected[rel] = e.hash
+		paths = append(paths, rel)
+	}
+
 	var match, mismatch int
 
-	var paths []string
-	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		paths = append(paths, path)
-		return nil
-	})
-	if err != nil {
-		return err
-	}
 	total := len(paths)
 	var processedCount int64
 
@@ -173,8 +187,9 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for path := range jobs {
-				exp, ok := expected[path]
+			for name := range jobs {
+				path := filepath.Join(dir, name)
+				exp, ok := expected[name]
 				hash, hErr := hashFile(path)
 				r := result{path: path}
 				if hErr != nil {
@@ -252,4 +267,16 @@ func hashFile(path string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func commonPrefix(a, b string) string {
+	max := len(a)
+	if len(b) < max {
+		max = len(b)
+	}
+	i := 0
+	for i < max && a[i] == b[i] {
+		i++
+	}
+	return a[:i]
 }
