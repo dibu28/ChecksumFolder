@@ -125,6 +125,7 @@ func generateChecksums(dir, output string, progress bool) error {
 
 func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 	expected := map[string]string{}
+	var paths []string
 	f, err := os.Open(listfile)
 	if err != nil {
 		return err
@@ -134,27 +135,15 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		line := scanner.Text()
 		parts := strings.SplitN(line, "\t", 2)
 		if len(parts) == 2 {
-			expected[parts[1]] = parts[0]
+			name := filepath.Base(parts[1])
+			expected[name] = parts[0]
+			paths = append(paths, name)
 		}
 	}
 	f.Close()
 
 	var match, mismatch int
 
-	var paths []string
-	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		paths = append(paths, path)
-		return nil
-	})
-	if err != nil {
-		return err
-	}
 	total := len(paths)
 	var processedCount int64
 
@@ -173,8 +162,9 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for path := range jobs {
-				exp, ok := expected[path]
+			for name := range jobs {
+				path := filepath.Join(dir, name)
+				exp, ok := expected[name]
 				hash, hErr := hashFile(path)
 				r := result{path: path}
 				if hErr != nil {
