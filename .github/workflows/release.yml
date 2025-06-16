@@ -9,34 +9,52 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  create_release:
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23.x'
-
-      - name: Build project
-        run: |
-          GOOS=linux GOARCH=amd64 go build -o CheckSumFolder .
-
-      - name: Publish release
+      - uses: softprops/action-gh-release@v1
         id: create_release
-        uses: softprops/action-gh-release@v1
         with:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build:
+    needs: create_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+        include:
+          - goos: linux
+            goarch: arm
+            goarm: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Build binary
+        run: |
+          NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          if [ -n "${{ matrix.goarm }}" ]; then
+            NAME="${NAME}v${{ matrix.goarm }}"
+          fi
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            NAME="$NAME.exe"
+          fi
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -o "$NAME" .
+          echo "ASSET_NAME=$NAME" >> $GITHUB_ENV
       - name: Upload binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./CheckSumFolder
-          asset_name: CheckSumFolder-${{ github.ref_name }}-linux-amd64
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.ASSET_NAME }}
+          asset_name: ${{ env.ASSET_NAME }}
           asset_content_type: application/octet-stream
