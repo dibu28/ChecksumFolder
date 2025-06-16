@@ -14,10 +14,23 @@ CheckSumFolder -dir /path/to/dir -out hashes.txt
 If `hashes.txt` already contains results, existing entries are skipped so the
 operation can be resumed.
 
+Use `-progress` to periodically print how many files have been processed.
+
+Example:
+```
+CheckSumFolder -dir /path/to/dir -out hashes.txt -progress
+```
+
 ### Verify checksums
 ```
 CheckSumFolder -verify -dir /path/to/dir -list hashes.txt [-verbose]
 ```
 Use `-verbose` to print the status of every file. Without it, only mismatches
-are printed or a message that everything matches. Verification runs in
-parallel across all CPU cores to speed up processing on large directory trees.
+are printed or a message that everything matches. Add `-progress` to show
+verification progress. Verification runs in parallel across all CPU cores to
+speed up processing on large directory trees.
+
+Example:
+```
+CheckSumFolder -verify -dir /path/to/dir -list hashes.txt -progress
+```
