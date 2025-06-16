@@ -127,9 +127,10 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 	}
 
 	jobs := make(chan string)
-	results := make(chan result)
-	wg := sync.WaitGroup{}
 	workers := runtime.NumCPU()
+	results := make(chan result, workers)
+	done := make(chan struct{})
+	wg := sync.WaitGroup{}
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
@@ -150,6 +151,21 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 			}
 		}()
 	}
+
+	go func() {
+		for r := range results {
+			total++
+			if r.ok {
+				match++
+			} else {
+				mismatch++
+			}
+			if verbose || r.status == "MISMATCH" || (r.status == "OK" && !r.ok) {
+				fmt.Printf("%s %s\n", r.path, r.status)
+			}
+		}
+		done <- struct{}{}
+	}()
 
 	go func() {
 		wg.Wait()
@@ -173,17 +189,7 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 		return err
 	}
 
-	for r := range results {
-		total++
-		if r.ok {
-			match++
-		} else {
-			mismatch++
-		}
-		if verbose || r.status == "MISMATCH" || r.status == "OK" && !r.ok {
-			fmt.Printf("%s %s\n", r.path, r.status)
-		}
-	}
+	<-done
 
 	if !verbose {
 		if mismatch == 0 {
