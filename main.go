@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -168,7 +169,6 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 	}
 
 	var match, mismatch int
-
 	total := len(paths)
 	var processedCount int64
 
