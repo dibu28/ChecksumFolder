@@ -50,11 +50,6 @@ jobs:
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -o "$NAME" .
           echo "ASSET_NAME=$NAME" >> $GITHUB_ENV
       - name: Upload binary
-        uses: actions/upload-release-asset@v1.0.2
+        run: gh release upload "${{ github.ref_name }}" "${{ env.ASSET_NAME }}" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./${{ env.ASSET_NAME }}
-          asset_name: ${{ env.ASSET_NAME }}
-          asset_content_type: application/octet-stream
