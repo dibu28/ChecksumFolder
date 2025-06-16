@@ -19,19 +19,20 @@ jobs:
       - name: Build project
         run: go build ./...
 
-      - name: Upload binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./CheckSumFolder
-          asset_name: CheckSumFolder-${{ github.ref_name }}-linux-amd64
-          asset_content_type: application/octet-stream
-
       - name: Publish release
+        id: create_release
         uses: softprops/action-gh-release@v1
         with:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./CheckSumFolder
+          asset_name: CheckSumFolder-${{ github.ref_name }}-linux-amd64
+          asset_content_type: application/octet-stream
