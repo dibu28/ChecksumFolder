@@ -139,35 +139,61 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		line := scanner.Text()
 		parts := strings.SplitN(line, "\t", 2)
 		if len(parts) == 2 {
-			// Normalize path from list file to use OS-specific separators
-			// and ensure it's clean.
-			p := filepath.Clean(parts[1])
+			// Normalize all backslashes to forward slashes.
+			// This is crucial for consistent parsing of paths from Windows.
+			p := strings.ReplaceAll(parts[1], "\\", "/")
 			entries = append(entries, entry{hash: parts[0], path: p})
 		}
 	}
 	f.Close()
 
 	expected := map[string]string{}
-	var pathsToProcess []string // This will store the actual paths to hash
+	var pathsToProcess []string
+
+	// Get the absolute path of the -dir argument
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for -dir: %w", err)
+	}
+	// Clean the absolute directory path for consistent comparison
+	absDir = filepath.Clean(absDir)
 
 	for _, e := range entries {
 		var actualPath string
-		if filepath.IsAbs(e.path) {
+		// Check if the path from the list file starts with a Windows drive letter (e.g., "H:/")
+		isWindowsDrivePath := len(e.path) >= 2 && e.path[1] == ':' && (e.path[0] >= 'A' && e.path[0] <= 'Z' || e.path[0] >= 'a' && e.path[0] <= 'z')
+
+		if isWindowsDrivePath {
+			// If it's a Windows drive path, strip the drive letter and leading slash/backslash
+			// and treat the rest as relative to the -dir.
+			tempPath := e.path[2:]
+			if strings.HasPrefix(tempPath, "/") || strings.HasPrefix(tempPath, "\\") {
+				tempPath = tempPath[1:]
+			}
+			// Now tempPath is like "_YD_Photo/Фото и видео/..."
+			// Apply the dirBase trimming logic to tempPath
+			dirBase := filepath.Base(absDir)
+			if dirBase != "" && strings.HasPrefix(tempPath, dirBase+"/") {
+				actualPath = filepath.Join(absDir, strings.TrimPrefix(tempPath, dirBase+"/"))
+			} else {
+				actualPath = filepath.Join(absDir, tempPath)
+			}
+		} else if filepath.IsAbs(e.path) {
+			// If it's a Unix-style absolute path (starts with /), use it directly.
+			// This assumes the absolute path is valid on the current system.
 			actualPath = e.path
 		} else {
-			// Path from list file is relative.
-			// Check if it starts with the base name of the -dir flag.
-			dirBase := filepath.Base(dir)
-			// Ensure dirBase is not empty and e.path actually starts with it
-			if dirBase != "" && strings.HasPrefix(e.path, dirBase+string(filepath.Separator)) {
-				// If it does, trim the base name to avoid duplication
-				actualPath = filepath.Join(dir, strings.TrimPrefix(e.path, dirBase+string(filepath.Separator)))
+			// It's a relative path (e.g., "_YD_Photo/..." or "subfolder/...")
+			// Join it with the absolute -dir.
+			// We still need the logic to trim dirBase if present in e.path.
+			dirBase := filepath.Base(absDir)
+			if dirBase != "" && strings.HasPrefix(e.path, dirBase+"/") {
+				actualPath = filepath.Join(absDir, strings.TrimPrefix(e.path, dirBase+"/"))
 			} else {
-				// Otherwise, just join it with dir
-				actualPath = filepath.Join(dir, e.path)
+				actualPath = filepath.Join(absDir, e.path)
 			}
 		}
-		expected[actualPath] = e.hash // Store expected hash keyed by actual path
+		expected[actualPath] = e.hash
 		pathsToProcess = append(pathsToProcess, actualPath)
 	}
 
@@ -196,6 +222,7 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 				r := result{path: path}
 				if hErr != nil {
 					r.status = hErr.Error()
+					fmt.Printf("ERROR: %s: %v\n", path, hErr) // Add this line
 				} else if !ok || exp != hash {
 					r.status = "MISMATCH"
 				} else {
