@@ -28,6 +28,10 @@ jobs:
       matrix:
         goos: [linux, windows, darwin]
         goarch: [amd64, arm64]
+        include:
+          - goos: linux
+            goarch: arm
+            goarm: 7
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
@@ -37,10 +41,13 @@ jobs:
       - name: Build binary
         run: |
           NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          if [ -n "${{ matrix.goarm }}" ]; then
+            NAME="${NAME}v${{ matrix.goarm }}"
+          fi
           if [ "${{ matrix.goos }}" = "windows" ]; then
             NAME="$NAME.exe"
           fi
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o "$NAME" .
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -o "$NAME" .
           echo "ASSET_NAME=$NAME" >> $GITHUB_ENV
       - name: Upload binary
         uses: actions/upload-release-asset@v1

@@ -120,6 +120,42 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 
 	var total, match, mismatch int
 
+	type result struct {
+		path   string
+		status string
+		ok     bool
+	}
+
+	jobs := make(chan string)
+	results := make(chan result)
+	wg := sync.WaitGroup{}
+	workers := runtime.NumCPU()
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for path := range jobs {
+				exp, ok := expected[path]
+				hash, hErr := hashFile(path)
+				r := result{path: path}
+				if hErr != nil {
+					r.status = hErr.Error()
+				} else if !ok || exp != hash {
+					r.status = "MISMATCH"
+				} else {
+					r.status = "OK"
+					r.ok = true
+				}
+				results <- r
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
 	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -127,26 +163,26 @@ func verifyChecksums(dir, listfile string, verbose bool) error {
 		if d.IsDir() {
 			return nil
 		}
-		total++
-		exp, ok := expected[path]
-		hash, hErr := hashFile(path)
-		status := "OK"
-		if hErr != nil {
-			status = hErr.Error()
-			mismatch++
-		} else if !ok || exp != hash {
-			mismatch++
-			status = "MISMATCH"
-		} else {
-			match++
-		}
-		if verbose || status == "MISMATCH" || status == "OK" && !ok {
-			fmt.Printf("%s %s\n", path, status)
-		}
+		jobs <- path
 		return nil
 	})
+	close(jobs)
 	if err != nil {
+		for range results {
+		}
 		return err
+	}
+
+	for r := range results {
+		total++
+		if r.ok {
+			match++
+		} else {
+			mismatch++
+		}
+		if verbose || r.status == "MISMATCH" || r.status == "OK" && !r.ok {
+			fmt.Printf("%s %s\n", r.path, r.status)
+		}
 	}
 
 	if !verbose {
