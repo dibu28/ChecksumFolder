@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -135,7 +136,8 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 		line := scanner.Text()
 		parts := strings.SplitN(line, "\t", 2)
 		if len(parts) == 2 {
-			name := filepath.Base(parts[1])
+			p := strings.ReplaceAll(parts[1], "\\", "/")
+			name := path.Base(p)
 			expected[name] = parts[0]
 			paths = append(paths, name)
 		}
