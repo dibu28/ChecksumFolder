@@ -14,7 +14,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         id: create_release
         with:
           draft: false
@@ -50,7 +50,7 @@ jobs:
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -o "$NAME" .
           echo "ASSET_NAME=$NAME" >> $GITHUB_ENV
       - name: Upload binary
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
