@@ -17,6 +17,11 @@ If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
 operation can be resumed.
 
+
+## TODO
+
+- add option to save to jsol format
+- add option to change hash type crc32/md5/sha1/sha256/blake3/etc
 Use `-progress` to periodically print how many files have been processed.
 
 Example writing to a file:
