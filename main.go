@@ -19,9 +19,8 @@ import (
 
 func main() {
 	dir := flag.String("dir", ".", "directory to scan")
-	out := flag.String("out", "hashes.txt", "output file (for hashing)")
+	list := flag.String("list", "", "checksum list file")
 	verify := flag.Bool("verify", false, "verify mode")
-	list := flag.String("list", "", "list file for verify mode")
 	verbose := flag.Bool("verbose", false, "verbose verify output")
 	progress := flag.Bool("progress", false, "show progress updates")
 	flag.Parse()
@@ -34,7 +33,11 @@ func main() {
 			log.Fatal(err)
 		}
 	} else {
-		if err := generateChecksums(*dir, *out, *progress); err != nil {
+		output := *list
+		if output == "" {
+			output = "hashes.txt"
+		}
+		if err := generateChecksums(*dir, output, *progress); err != nil {
 			log.Fatal(err)
 		}
 	}
