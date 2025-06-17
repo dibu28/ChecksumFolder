@@ -33,11 +33,7 @@ func main() {
 			log.Fatal(err)
 		}
 	} else {
-		output := *list
-		if output == "" {
-			output = "hashes.txt"
-		}
-		if err := generateChecksums(*dir, output, *progress); err != nil {
+		if err := generateChecksums(*dir, *list, *progress); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -45,23 +41,31 @@ func main() {
 
 func generateChecksums(dir, output string, progress bool) error {
 	processed := map[string]bool{}
-	if f, err := os.Open(output); err == nil {
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			line := scanner.Text()
-			parts := strings.SplitN(line, "\t", 2)
-			if len(parts) == 2 {
-				processed[parts[1]] = true
-			}
-		}
-		f.Close()
-	}
+	toFile := output != ""
+	var file *os.File
+	var err error
 
-	file, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		return err
+	if toFile {
+		if f, err := os.Open(output); err == nil {
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				line := scanner.Text()
+				parts := strings.SplitN(line, "\t", 2)
+				if len(parts) == 2 {
+					processed[parts[1]] = true
+				}
+			}
+			f.Close()
+		}
+
+		file, err = os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+	} else {
+		file = os.Stdout
 	}
-	defer file.Close()
 	mu := sync.Mutex{}
 
 	var paths []string
@@ -94,7 +98,7 @@ func generateChecksums(dir, output string, progress bool) error {
 				} else {
 					line := fmt.Sprintf("%s\t%s\n", hash, path)
 					mu.Lock()
-					if _, err := file.WriteString(line); err == nil {
+					if _, err := file.WriteString(line); err == nil && toFile {
 						file.Sync()
 					}
 					mu.Unlock()
