@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -23,23 +24,24 @@ func main() {
 	verify := flag.Bool("verify", false, "verify mode")
 	verbose := flag.Bool("verbose", false, "verbose verify output")
 	progress := flag.Bool("progress", false, "show progress updates")
+	jsonl := flag.Bool("json", false, "output in JSONL format")
 	flag.Parse()
 
 	if *verify {
 		if *list == "" {
 			log.Fatal("-list required in verify mode")
 		}
-		if err := verifyChecksums(*dir, *list, *verbose, *progress); err != nil {
+		if err := verifyChecksums(*dir, *list, *verbose, *progress, *jsonl); err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		if err := generateChecksums(*dir, *list, *progress); err != nil {
+		if err := generateChecksums(*dir, *list, *progress, *jsonl); err != nil {
 			log.Fatal(err)
 		}
 	}
 }
 
-func generateChecksums(dir, output string, progress bool) error {
+func generateChecksums(dir, output string, progress, jsonOut bool) error {
 	processed := map[string]bool{}
 	toFile := output != ""
 	var file *os.File
@@ -50,9 +52,19 @@ func generateChecksums(dir, output string, progress bool) error {
 			scanner := bufio.NewScanner(f)
 			for scanner.Scan() {
 				line := scanner.Text()
-				parts := strings.SplitN(line, "\t", 2)
-				if len(parts) == 2 {
-					processed[parts[1]] = true
+				if jsonOut {
+					var e struct {
+						Hash string `json:"hash"`
+						Path string `json:"path"`
+					}
+					if err := json.Unmarshal([]byte(line), &e); err == nil {
+						processed[e.Path] = true
+					}
+				} else {
+					parts := strings.SplitN(line, "\t", 2)
+					if len(parts) == 2 {
+						processed[parts[1]] = true
+					}
 				}
 			}
 			f.Close()
@@ -96,7 +108,13 @@ func generateChecksums(dir, output string, progress bool) error {
 				if err != nil {
 					log.Printf("%v", err)
 				} else {
-					line := fmt.Sprintf("%s\t%s\n", hash, path)
+					var line string
+					if jsonOut {
+						b, _ := json.Marshal(map[string]string{"hash": hash, "path": path})
+						line = string(b) + "\n"
+					} else {
+						line = fmt.Sprintf("%s\t%s\n", hash, path)
+					}
 					mu.Lock()
 					if _, err := file.WriteString(line); err == nil && toFile {
 						file.Sync()
@@ -130,7 +148,7 @@ func generateChecksums(dir, output string, progress bool) error {
 	return nil
 }
 
-func verifyChecksums(dir, listfile string, verbose, progress bool) error {
+func verifyChecksums(dir, listfile string, verbose, progress, jsonIn bool) error {
 	type entry struct {
 		hash string
 		path string
@@ -144,12 +162,23 @@ func verifyChecksums(dir, listfile string, verbose, progress bool) error {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.SplitN(line, "\t", 2)
-		if len(parts) == 2 {
-			// Normalize all backslashes to forward slashes.
-			// This is crucial for consistent parsing of paths from Windows.
-			p := strings.ReplaceAll(parts[1], "\\", "/")
-			entries = append(entries, entry{hash: parts[0], path: p})
+		if jsonIn {
+			var e struct {
+				Hash string `json:"hash"`
+				Path string `json:"path"`
+			}
+			if err := json.Unmarshal([]byte(line), &e); err == nil {
+				p := strings.ReplaceAll(e.Path, "\\", "/")
+				entries = append(entries, entry{hash: e.Hash, path: p})
+			}
+		} else {
+			parts := strings.SplitN(line, "\t", 2)
+			if len(parts) == 2 {
+				// Normalize all backslashes to forward slashes.
+				// This is crucial for consistent parsing of paths from Windows.
+				p := strings.ReplaceAll(parts[1], "\\", "/")
+				entries = append(entries, entry{hash: parts[0], path: p})
+			}
 		}
 	}
 	f.Close()
