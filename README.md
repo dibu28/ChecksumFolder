@@ -16,6 +16,8 @@ specified and it already contains results, existing entries are skipped so the
 operation can be resumed.
 
 Use `-progress` to periodically print how many files have been processed.
+Use `-json` to write results in JSONL format where each line is a JSON object
+containing `hash` and `path` fields.
 
 Example writing to a file:
 ```
@@ -37,6 +39,7 @@ Use `-verbose` to print the status of every file. Without it, only mismatches
 are printed or a message that everything matches. Add `-progress` to show
 verification progress. Verification runs in parallel across all CPU cores to
 speed up processing on large directory trees.
+Use `-json` when verifying to read the checksum list in JSONL format.
 
 Example:
 ```
@@ -45,5 +48,4 @@ CheckSumFolder -verify -dir /path/to/dir -list hashes.txt -progress
 
 ## TODO
 
-- add option to save to jsol format
 - add option to change hash type crc32/md5/sha1/sha256/blake3/etc
