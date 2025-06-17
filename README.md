@@ -9,7 +9,9 @@ against a previously generated list of hashes.
 
 ### Generate checksums
 ```
+
 CheckSumFolder -dir /path/to/dir [-list hashes.txt]
+
 ```
 If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
