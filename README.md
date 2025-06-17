@@ -9,16 +9,17 @@ against a previously generated list of hashes.
 
 ### Generate checksums
 ```
-CheckSumFolder -dir /path/to/dir -out hashes.txt
+CheckSumFolder -dir /path/to/dir [-list hashes.txt]
 ```
-If `hashes.txt` already contains results, existing entries are skipped so the
+If `-list` is omitted the results are printed to the console. When a file is
+specified and it already contains results, existing entries are skipped so the
 operation can be resumed.
 
 Use `-progress` to periodically print how many files have been processed.
 
-Example:
+Example writing to a file:
 ```
-CheckSumFolder -dir /path/to/dir -out hashes.txt -progress
+CheckSumFolder -dir /path/to/dir -list hashes.txt -progress
 ```
 
 ### Verify checksums
@@ -41,3 +42,8 @@ Example:
 ```
 CheckSumFolder -verify -dir /path/to/dir -list hashes.txt -progress
 ```
+
+## TODO
+
+- add option to save to jsol format
+- add option to change hash type crc32/md5/sha1/sha256/blake3/etc
