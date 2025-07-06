@@ -16,6 +16,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/cespare/xxhash/v2"
+	sha256 "github.com/minio/sha256-simd"
+	"github.com/zeebo/blake3"
+	"hash"
 )
 
 func main() {
@@ -25,23 +30,24 @@ func main() {
 	verbose := flag.Bool("verbose", false, "verbose verify output")
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
+	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash")
 	flag.Parse()
 
 	if *verify {
 		if *list == "" {
 			log.Fatal("-list required in verify mode")
 		}
-		if err := verifyChecksums(*dir, *list, *verbose, *progress, *jsonl); err != nil {
+		if err := verifyChecksums(*dir, *list, *verbose, *progress, *jsonl, *algo); err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		if err := generateChecksums(*dir, *list, *progress, *jsonl); err != nil {
+		if err := generateChecksums(*dir, *list, *progress, *jsonl, *algo); err != nil {
 			log.Fatal(err)
 		}
 	}
 }
 
-func generateChecksums(dir, output string, progress, jsonOut bool) error {
+func generateChecksums(dir, output string, progress, jsonOut bool, algo string) error {
 	processed := map[string]bool{}
 	toFile := output != ""
 	var file *os.File
@@ -104,7 +110,7 @@ func generateChecksums(dir, output string, progress, jsonOut bool) error {
 		go func() {
 			defer wg.Done()
 			for path := range jobs {
-				hash, err := hashFile(path)
+				hash, err := hashFile(path, algo)
 				if err != nil {
 					log.Printf("%v", err)
 				} else {
@@ -148,7 +154,7 @@ func generateChecksums(dir, output string, progress, jsonOut bool) error {
 	return nil
 }
 
-func verifyChecksums(dir, listfile string, verbose, progress, jsonIn bool) error {
+func verifyChecksums(dir, listfile string, verbose, progress, jsonIn bool, algo string) error {
 	type entry struct {
 		hash string
 		path string
@@ -254,7 +260,7 @@ func verifyChecksums(dir, listfile string, verbose, progress, jsonIn bool) error
 			defer wg.Done()
 			for path := range jobs { // 'path' here is the actual path to hash
 				exp, ok := expected[path] // Lookup using the actual path
-				hash, hErr := hashFile(path)
+				hash, hErr := hashFile(path, algo)
 				r := result{path: path}
 				if hErr != nil {
 					r.status = hErr.Error()
@@ -321,13 +327,25 @@ func verifyChecksums(dir, listfile string, verbose, progress, jsonIn bool) error
 	return nil
 }
 
-func hashFile(path string) (string, error) {
+func hashFile(path, algo string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
-	h := sha1.New()
+	var h hash.Hash
+	switch strings.ToLower(algo) {
+	case "sha1":
+		h = sha1.New()
+	case "sha256":
+		h = sha256.New()
+	case "blake3":
+		h = blake3.New()
+	case "xxhash":
+		h = xxhash.New()
+	default:
+		return "", fmt.Errorf("unknown hash algorithm: %s", algo)
+	}
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err
 	}
