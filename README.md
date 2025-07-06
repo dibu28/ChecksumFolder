@@ -1,25 +1,26 @@
 # CheckSumFolder
 
 CheckSumFolder is a command line tool written in Go that scans a directory
-recursively, computes the SHA1 checksum of every file and writes the results to
-an output text file. The tool can resume interrupted runs and also verify files
-against a previously generated list of hashes.
+recursively, computes checksums of every file and writes the results to an
+output text file. The tool can resume interrupted runs and also verify files
+against a previously generated list of hashes. By default SHA1 is used but the
+hash algorithm can be changed.
 
 ## Usage
 
 ### Generate checksums
 ```
-CheckSumFolder -dir /path/to/dir [-list hashes.txt]
+CheckSumFolder -dir /path/to/dir [-list hashes.txt] [-hash sha256]
 ```
 If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
-operation can be resumed.
+operation can be resumed. Use `-hash` to select the hashing algorithm. Allowed
+values are `sha1`, `sha256`, `blake3` and `xxhash`.
 
 
 ## TODO
 
 - add option to save to jsol format
-- add option to change hash type crc32/md5/sha1/sha256/blake3/etc
 Use `-progress` to periodically print how many files have been processed.
 Use `-json` to write results in JSONL format where each line is a JSON object
 containing `hash` and `path` fields.
@@ -50,7 +51,3 @@ Example:
 ```
 CheckSumFolder -verify -dir /path/to/dir -list hashes.txt -progress
 ```
-
-## TODO
-
-- add option to change hash type crc32/md5/sha1/sha256/blake3/etc
