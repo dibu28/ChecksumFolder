@@ -51,3 +51,13 @@ Example:
 ```
 CheckSumFolder -verify -dir /path/to/dir -list hashes.txt -progress
 ```
+
+### CPU Optimizations
+
+ChecksumFolder detects available CPU features using the
+[`cpuid`](https://github.com/klauspost/cpuid) library. When SIMD
+instructions like SSE2 on x86 or ASIMD/NEON on ARM64 are present the
+program uses the accelerated `sha256-simd` implementation. On older
+CPUs without these capabilities it transparently falls back to Go's
+standard SHA-256 implementation. This happens automatically at
+startup and works across different architectures.
