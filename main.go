@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/sha1"
+	stdsha256 "crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -338,7 +339,11 @@ func hashFile(path, algo string) (string, error) {
 	case "sha1":
 		h = sha1.New()
 	case "sha256":
-		h = sha256.New()
+		if useStdSHA256 {
+			h = stdsha256.New()
+		} else {
+			h = sha256.New()
+		}
 	case "blake3":
 		h = blake3.New()
 	case "xxhash":
