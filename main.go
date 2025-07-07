@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash/v2"
+	sha256 "github.com/minio/sha256-simd"
 	"github.com/zeebo/blake3"
 	"hash"
 )
@@ -366,7 +367,7 @@ func hashFile(path, algo string) (string, error) {
 		h = sha1.New()
 	case "sha256":
 		if useStdSHA256 {
-      h = stdsha256.New()
+			h = stdsha256.New()
 		} else {
 			h = sha256.New()
 		}
