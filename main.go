@@ -51,6 +51,10 @@ func generateChecksums(dir, output string, progress, jsonOut bool, algo string) 
 	processed := map[string]bool{}
 	toFile := output != ""
 	var file *os.File
+	var writer *bufio.Writer
+	const flushInterval = 100
+	var lineCount int
+	mu := sync.Mutex{}
 	var err error
 
 	if toFile {
@@ -80,12 +84,23 @@ func generateChecksums(dir, output string, progress, jsonOut bool, algo string) 
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		writer = bufio.NewWriterSize(file, 64*1024)
+		defer func() {
+			mu.Lock()
+			writer.Flush()
+			file.Sync()
+			file.Close()
+			mu.Unlock()
+		}()
 	} else {
 		file = os.Stdout
+		writer = bufio.NewWriter(file)
+		defer func() {
+			mu.Lock()
+			writer.Flush()
+			mu.Unlock()
+		}()
 	}
-	mu := sync.Mutex{}
-
 	var paths []string
 	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -122,8 +137,14 @@ func generateChecksums(dir, output string, progress, jsonOut bool, algo string) 
 						line = fmt.Sprintf("%s\t%s\n", hash, path)
 					}
 					mu.Lock()
-					if _, err := file.WriteString(line); err == nil && toFile {
-						file.Sync()
+					if _, err := writer.WriteString(line); err == nil {
+						lineCount++
+						if lineCount%flushInterval == 0 {
+							writer.Flush()
+							if toFile {
+								file.Sync()
+							}
+						}
 					}
 					mu.Unlock()
 				}
@@ -147,6 +168,12 @@ func generateChecksums(dir, output string, progress, jsonOut bool, algo string) 
 	}
 	close(jobs)
 	wg.Wait()
+	mu.Lock()
+	writer.Flush()
+	if toFile {
+		file.Sync()
+	}
+	mu.Unlock()
 	if ticker != nil {
 		ticker.Stop()
 		fmt.Printf("%d/%d\n", processedCount, total)
