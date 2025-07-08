@@ -15,7 +15,7 @@ CheckSumFolder -dir /path/to/dir [-list hashes.txt] [-hash sha256]
 If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
 operation can be resumed. Use `-hash` to select the hashing algorithm. Allowed
-values are `sha1`, `sha256`, `blake3`, `xxhash`, `xxh3`, `xxh128`, `highway64`, `highway128` and `highway256`.
+values are `sha1`, `sha256`, `blake3`, `xxhash`, `xxh3`, `xxh128`, `t1ha1`, `t1ha2`, `highway64`, `highway128` and `highway256`.
 When using a HighwayHash variant you can provide a custom key via the `-hkey`
 flag. The key must be 32 bytes encoded as hex or base64. If omitted the
 default key `AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=` (base64) is used.
@@ -66,9 +66,9 @@ instructions like SSE2 on x86 or ASIMD/NEON on ARM64 are present the
 program uses the accelerated `sha256-simd` implementation.
 HighwayHash also ships optimized assembly for x86 and ARM64 CPUs. The
 `xxh3`/`xxh128` implementations detect AVX2 or NEON at runtime and use
-vectorized code when available.
-No official
-armv7 assembly is provided.
+vectorized code when available. The `t1ha` routines include tuned
+implementations with optional AES and NEON support and fall back to
+portable code on other CPUs. No official armv7 assembly is provided.
 On older CPUs without these capabilities it transparently falls back to Go's
 standard implementations. This happens automatically at startup and
 works across different architectures.
