@@ -7,10 +7,11 @@ import (
 )
 
 var useStdSHA256 bool
+var useBlake3C bool
 
 func init() {
-	// On ARM64 some features require explicit detection
-	if runtime.GOARCH == "arm64" {
+	// On ARM systems some features require explicit detection
+	if runtime.GOARCH == "arm64" || runtime.GOARCH == "arm" {
 		cpuid.DetectARM()
 	}
 
@@ -20,9 +21,11 @@ func init() {
 		if !cpuid.CPU.Supports(cpuid.SSE2) {
 			useStdSHA256 = true
 		}
-	case "arm64":
+	case "arm64", "arm":
 		if !cpuid.CPU.Supports(cpuid.ASIMD) {
 			useStdSHA256 = true
+		} else {
+			useBlake3C = true
 		}
 	default:
 		// Unknown architecture, use conservative default

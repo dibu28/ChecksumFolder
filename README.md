@@ -6,6 +6,9 @@ output text file. The tool can resume interrupted runs and also verify files
 against a previously generated list of hashes. By default SHA1 is used but the
 hash algorithm can be changed.
 
+### Build Requirements
+Building with NEON support requires CGO enabled and a working C compiler.
+
 ## Usage
 
 ### Generate checksums
@@ -71,6 +74,9 @@ HighwayHash also ships optimized assembly for x86 and ARM64 CPUs. The
 vectorized code when available. The `t1ha` routines include tuned
 implementations with optional AES and NEON support and fall back to
 portable code on other CPUs. No official armv7 assembly is provided.
+When NEON is detected the program also uses the official BLAKE3 C
+implementation via CGO for additional performance. A working C toolchain
+is required in this case.
 On older CPUs without these capabilities it transparently falls back to Go's
 standard implementations. This happens automatically at startup and
 works across different architectures.

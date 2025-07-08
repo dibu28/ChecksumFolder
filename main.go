@@ -27,6 +27,7 @@ import (
 	"github.com/zeebo/blake3"
 	"github.com/zeebo/xxh3"
 
+	"CheckSumFolder/blake3c"
 	"CheckSumFolder/t1ha"
 
 	"hash"
@@ -427,6 +428,13 @@ func hashFile(path, algo string) (string, error) {
 	case "blake2b":
 		h = blake2b.New512()
 	case "blake3":
+		if useBlake3C {
+			ch := blake3c.BLAKE3Init()
+			if _, err := io.Copy(ch, f); err != nil {
+				return "", err
+			}
+			return hex.EncodeToString(ch.Sum(nil)), nil
+		}
 		h = blake3.New()
 	case "xxhash":
 		h = xxhash.New()
