@@ -19,6 +19,7 @@ values are `sha1`, `sha256`, `blake3`, `xxhash`, `highway64`, `highway128` and `
 When using a HighwayHash variant you can provide a custom key via the `-hkey`
 flag. The key must be 32 bytes encoded as hex or base64. If omitted the
 default key `AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=` (base64) is used.
+HighwayHash assembly accelerates only x86 and ARM64 platforms.
 
 
 ## TODO
@@ -63,7 +64,8 @@ ChecksumFolder detects available CPU features using the
 [`cpuid`](https://github.com/klauspost/cpuid) library. When SIMD
 instructions like SSE2 on x86 or ASIMD/NEON on ARM64 are present the
 program uses the accelerated `sha256-simd` implementation.
-HighwayHash also ships optimized assembly for Intel and ARM CPUs.
+HighwayHash also ships optimized assembly for x86 and ARM64 CPUs. No official
+armv7 assembly is provided.
 On older CPUs without these capabilities it transparently falls back to Go's
 standard implementations. This happens automatically at startup and
 works across different architectures.
