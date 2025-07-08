@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha1"
 	stdsha256 "crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -40,8 +41,25 @@ func main() {
 	verbose := flag.Bool("verbose", false, "verbose verify output")
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
+	hkeyFlag := flag.String("hkey", "", "hex or base64 HighwayHash key")
 	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|highway64|highway128|highway256")
 	flag.Parse()
+
+	if *hkeyFlag != "" {
+		if k, err := hex.DecodeString(*hkeyFlag); err == nil {
+			if len(k) != 32 {
+				log.Fatal("highwayhash key must be 32 bytes")
+			}
+			highwayKey = k
+		} else if k, err := base64.StdEncoding.DecodeString(*hkeyFlag); err == nil {
+			if len(k) != 32 {
+				log.Fatal("highwayhash key must be 32 bytes")
+			}
+			highwayKey = k
+		} else {
+			log.Fatal("invalid hkey encoding")
+		}
+	}
 
 	if *verify {
 		if *list == "" {
