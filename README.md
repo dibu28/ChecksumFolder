@@ -15,7 +15,7 @@ CheckSumFolder -dir /path/to/dir [-list hashes.txt] [-hash sha256]
 If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
 operation can be resumed. Use `-hash` to select the hashing algorithm. Allowed
-values are `sha1`, `sha256`, `blake3` and `xxhash`.
+values are `sha1`, `sha256`, `blake3`, `xxhash`, `highway64`, `highway128` and `highway256`.
 
 
 ## TODO
@@ -57,7 +57,8 @@ CheckSumFolder -verify -dir /path/to/dir -list hashes.txt -progress
 ChecksumFolder detects available CPU features using the
 [`cpuid`](https://github.com/klauspost/cpuid) library. When SIMD
 instructions like SSE2 on x86 or ASIMD/NEON on ARM64 are present the
-program uses the accelerated `sha256-simd` implementation. On older
-CPUs without these capabilities it transparently falls back to Go's
-standard SHA-256 implementation. This happens automatically at
-startup and works across different architectures.
+program uses the accelerated `sha256-simd` implementation.
+HighwayHash also ships optimized assembly for Intel and ARM CPUs.
+On older CPUs without these capabilities it transparently falls back to Go's
+standard implementations. This happens automatically at startup and
+works across different architectures.
