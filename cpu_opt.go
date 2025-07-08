@@ -10,8 +10,11 @@ var useStdSHA256 bool
 var useBlake3C bool
 
 func init() {
-	// On ARM systems some features require explicit detection
-	if runtime.GOARCH == "arm64" || runtime.GOARCH == "arm" {
+	// On ARM systems some features require explicit detection.
+	// Only attempt this when user space access to the CPU ID registers is
+	// allowed; otherwise attempting detection may trigger an illegal
+	// instruction fault on older kernels.
+	if (runtime.GOARCH == "arm64" || runtime.GOARCH == "arm") && cpuid.CPU.Supports(cpuid.ARMCPUID) {
 		cpuid.DetectARM()
 	}
 
