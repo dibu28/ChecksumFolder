@@ -19,10 +19,19 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash/v2"
+	"github.com/minio/highwayhash"
 	sha256 "github.com/minio/sha256-simd"
 	"github.com/zeebo/blake3"
+
 	"hash"
 )
+
+var highwayKey = []byte{
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+	0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+}
 
 func main() {
 	dir := flag.String("dir", ".", "directory to scan")
@@ -31,7 +40,7 @@ func main() {
 	verbose := flag.Bool("verbose", false, "verbose verify output")
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
-	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash")
+	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|highway64|highway128|highway256")
 	flag.Parse()
 
 	if *verify {
@@ -375,6 +384,24 @@ func hashFile(path, algo string) (string, error) {
 		h = blake3.New()
 	case "xxhash":
 		h = xxhash.New()
+	case "highway64":
+		hw, err := highwayhash.New64(highwayKey)
+		if err != nil {
+			return "", err
+		}
+		h = hw
+	case "highway128":
+		hw, err := highwayhash.New128(highwayKey)
+		if err != nil {
+			return "", err
+		}
+		h = hw
+	case "highway256":
+		hw, err := highwayhash.New(highwayKey)
+		if err != nil {
+			return "", err
+		}
+		h = hw
 	default:
 		return "", fmt.Errorf("unknown hash algorithm: %s", algo)
 	}
