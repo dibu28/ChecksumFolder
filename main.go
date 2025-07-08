@@ -23,6 +23,7 @@ import (
 	"github.com/minio/highwayhash"
 	sha256 "github.com/minio/sha256-simd"
 	"github.com/zeebo/blake3"
+	"github.com/zeebo/xxh3"
 
 	"hash"
 )
@@ -44,7 +45,7 @@ func main() {
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
 	hkeyFlag := flag.String("hkey", defaultHighwayKey, "hex or base64 HighwayHash key")
-	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|highway64|highway128|highway256")
+	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|xxh3|xxh128|highway64|highway128|highway256")
 	flag.Parse()
 
 	if k, err := hex.DecodeString(*hkeyFlag); err == nil {
@@ -388,8 +389,19 @@ func hashFile(path, algo string) (string, error) {
 		return "", err
 	}
 	defer f.Close()
+	alg := strings.ToLower(algo)
+
+	if alg == "xxh128" {
+		h := xxh3.New()
+		if _, err := io.Copy(h, f); err != nil {
+			return "", err
+		}
+		sum := h.Sum128().Bytes()
+		return hex.EncodeToString(sum[:]), nil
+	}
+
 	var h hash.Hash
-	switch strings.ToLower(algo) {
+	switch alg {
 	case "sha1":
 		h = sha1.New()
 	case "sha256":
@@ -402,6 +414,8 @@ func hashFile(path, algo string) (string, error) {
 		h = blake3.New()
 	case "xxhash":
 		h = xxhash.New()
+	case "xxh3":
+		h = xxh3.New()
 	case "highway64":
 		hw, err := highwayhash.New64(highwayKey)
 		if err != nil {
