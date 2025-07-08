@@ -16,6 +16,9 @@ If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
 operation can be resumed. Use `-hash` to select the hashing algorithm. Allowed
 values are `sha1`, `sha256`, `blake3`, `xxhash`, `highway64`, `highway128` and `highway256`.
+When using a HighwayHash variant you can provide a custom key via the `-hkey`
+flag. The key must be 32 bytes encoded as hex or base64. If omitted the
+default key `AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=` (base64) is used.
 
 
 ## TODO
@@ -46,6 +49,8 @@ are printed or a message that everything matches. Add `-progress` to show
 verification progress. Verification runs in parallel across all CPU cores to
 speed up processing on large directory trees.
 Use `-json` when verifying to read the checksum list in JSONL format.
+When verifying with a HighwayHash algorithm pass the same key using `-hkey`. If
+the flag is omitted the same default key is assumed.
 
 Example:
 ```
