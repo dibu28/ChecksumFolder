@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash/v2"
+	blake2b "github.com/minio/blake2b-simd"
 	"github.com/minio/highwayhash"
 	sha256 "github.com/minio/sha256-simd"
 	"github.com/zeebo/blake3"
@@ -48,7 +49,7 @@ func main() {
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
 	hkeyFlag := flag.String("hkey", defaultHighwayKey, "hex or base64 HighwayHash key")
-	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|xxh3|xxh128|t1ha1|t1ha2|highway64|highway128|highway256")
+	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake2b|blake3|xxhash|xxh3|xxh128|t1ha1|t1ha2|highway64|highway128|highway256")
 	flag.Parse()
 
 	if k, err := hex.DecodeString(*hkeyFlag); err == nil {
@@ -423,6 +424,8 @@ func hashFile(path, algo string) (string, error) {
 		} else {
 			h = sha256.New()
 		}
+	case "blake2b":
+		h = blake2b.New512()
 	case "blake3":
 		h = blake3.New()
 	case "xxhash":
