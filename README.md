@@ -67,3 +67,7 @@ HighwayHash also ships optimized assembly for Intel and ARM CPUs.
 On older CPUs without these capabilities it transparently falls back to Go's
 standard implementations. This happens automatically at startup and
 works across different architectures.
+
+## License
+This project is licensed under the [MIT License](LICENSE).
+
