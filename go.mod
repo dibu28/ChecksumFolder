@@ -4,6 +4,7 @@ go 1.23.8
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
+	github.com/dgryski/go-t1ha v0.0.0-20170624085304-d42c050643ba
 	github.com/klauspost/cpuid/v2 v2.2.3
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/minio/highwayhash v1.0.3
