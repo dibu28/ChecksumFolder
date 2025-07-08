@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	stdsha256 "crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -24,6 +25,8 @@ import (
 	sha256 "github.com/minio/sha256-simd"
 	"github.com/zeebo/blake3"
 	"github.com/zeebo/xxh3"
+
+	"CheckSumFolder/t1ha"
 
 	"hash"
 )
@@ -45,7 +48,7 @@ func main() {
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
 	hkeyFlag := flag.String("hkey", defaultHighwayKey, "hex or base64 HighwayHash key")
-	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|xxh3|xxh128|highway64|highway128|highway256")
+	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|xxh3|xxh128|t1ha1|t1ha2|highway64|highway128|highway256")
 	flag.Parse()
 
 	if k, err := hex.DecodeString(*hkeyFlag); err == nil {
@@ -398,6 +401,16 @@ func hashFile(path, algo string) (string, error) {
 		}
 		sum := h.Sum128().Bytes()
 		return hex.EncodeToString(sum[:]), nil
+	} else if alg == "t1ha2" {
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return "", err
+		}
+		lo, hi := t1ha.Sum128(b, 0)
+		sum := make([]byte, 16)
+		binary.BigEndian.PutUint64(sum[:8], hi)
+		binary.BigEndian.PutUint64(sum[8:], lo)
+		return hex.EncodeToString(sum), nil
 	}
 
 	var h hash.Hash
@@ -416,6 +429,14 @@ func hashFile(path, algo string) (string, error) {
 		h = xxhash.New()
 	case "xxh3":
 		h = xxh3.New()
+	case "t1ha1":
+		// t1ha1 processes a byte slice entirely in memory
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return "", err
+		}
+		sum := t1ha.Sum64(b, 0)
+		return fmt.Sprintf("%016x", sum), nil
 	case "highway64":
 		hw, err := highwayhash.New64(highwayKey)
 		if err != nil {
