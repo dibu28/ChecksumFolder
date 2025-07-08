@@ -34,6 +34,8 @@ var highwayKey = []byte{
 	0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 }
 
+const defaultHighwayKey = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+
 func main() {
 	dir := flag.String("dir", ".", "directory to scan")
 	list := flag.String("list", "", "checksum list file")
@@ -41,24 +43,22 @@ func main() {
 	verbose := flag.Bool("verbose", false, "verbose verify output")
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
-	hkeyFlag := flag.String("hkey", "", "hex or base64 HighwayHash key")
+	hkeyFlag := flag.String("hkey", defaultHighwayKey, "hex or base64 HighwayHash key")
 	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake3|xxhash|highway64|highway128|highway256")
 	flag.Parse()
 
-	if *hkeyFlag != "" {
-		if k, err := hex.DecodeString(*hkeyFlag); err == nil {
-			if len(k) != 32 {
-				log.Fatal("highwayhash key must be 32 bytes")
-			}
-			highwayKey = k
-		} else if k, err := base64.StdEncoding.DecodeString(*hkeyFlag); err == nil {
-			if len(k) != 32 {
-				log.Fatal("highwayhash key must be 32 bytes")
-			}
-			highwayKey = k
-		} else {
-			log.Fatal("invalid hkey encoding")
+	if k, err := hex.DecodeString(*hkeyFlag); err == nil {
+		if len(k) != 32 {
+			log.Fatal("highwayhash key must be 32 bytes")
 		}
+		highwayKey = k
+	} else if k, err := base64.StdEncoding.DecodeString(*hkeyFlag); err == nil {
+		if len(k) != 32 {
+			log.Fatal("highwayhash key must be 32 bytes")
+		}
+		highwayKey = k
+	} else {
+		log.Fatal("invalid hkey encoding")
 	}
 
 	if *verify {
