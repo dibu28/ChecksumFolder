@@ -24,52 +24,52 @@ jobs:
   build:
     needs: create_release
     runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          include:
-            - goos: linux
-              goarch: amd64
-              zig: x86_64-linux-gnu
-            - goos: linux
-              goarch: arm64
-              zig: aarch64-linux-gnu
-            - goos: linux
-              goarch: arm
-              goarm: 7
-              zig: armv7-linux-gnueabihf
-            - goos: linux
-              goarch: ppc64le
-              zig: powerpc64le-linux-gnu
-            - goos: linux
-              goarch: s390x
-              zig: s390x-linux-gnu
-            - goos: windows
-              goarch: amd64
-              zig: x86_64-windows-gnu
-            - goos: windows
-              goarch: arm64
-              zig: aarch64-windows-gnu
-            - goos: windows
-              goarch: 386
-              zig: i386-windows-gnu
-            - goos: darwin
-              goarch: amd64
-              zig: x86_64-macos
-            - goos: darwin
-              goarch: arm64
-              zig: aarch64-macos
-            - goos: freebsd
-              goarch: amd64
-              zig: x86_64-freebsd
-            - goos: freebsd
-              goarch: arm64
-              zig: aarch64-freebsd
-            - goos: openbsd
-              goarch: amd64
-              zig: x86_64-openbsd
-            - goos: netbsd
-              goarch: amd64
-              zig: x86_64-netbsd
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            zig: x86_64-linux-gnu
+          - goos: linux
+            goarch: arm64
+            zig: aarch64-linux-gnu
+          - goos: linux
+            goarch: arm
+            goarm: 7
+            zig: armv7-linux-gnueabihf
+          - goos: linux
+            goarch: ppc64le
+            zig: powerpc64le-linux-gnu
+          - goos: linux
+            goarch: s390x
+            zig: s390x-linux-gnu
+          - goos: windows
+            goarch: amd64
+            zig: x86_64-windows-gnu
+          - goos: windows
+            goarch: arm64
+            zig: aarch64-windows-gnu
+          - goos: windows
+            goarch: 386
+            zig: i386-windows-gnu
+          - goos: darwin
+            goarch: amd64
+            zig: x86_64-macos
+          - goos: darwin
+            goarch: arm64
+            zig: aarch64-macos
+          - goos: freebsd
+            goarch: amd64
+            zig: x86_64-freebsd
+          - goos: freebsd
+            goarch: arm64
+            zig: aarch64-freebsd
+          - goos: openbsd
+            goarch: amd64
+            zig: x86_64-openbsd
+          - goos: netbsd
+            goarch: amd64
+            zig: x86_64-netbsd
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
