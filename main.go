@@ -20,6 +20,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"CheckSumFolder/rapidhashc"
+	"CheckSumFolder/wyhashc"
 	"github.com/cespare/xxhash/v2"
 	blake2b "github.com/minio/blake2b-simd"
 	"github.com/minio/highwayhash"
@@ -50,7 +52,7 @@ func main() {
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
 	hkeyFlag := flag.String("hkey", defaultHighwayKey, "hex or base64 HighwayHash key")
-	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake2b|blake3|xxhash|xxh3|xxh128|t1ha1|t1ha2|highway64|highway128|highway256")
+	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake2b|blake3|xxhash|xxh3|xxh128|t1ha1|t1ha2|highway64|highway128|highway256|wyhash|rapidhash")
 	flag.Parse()
 
 	if k, err := hex.DecodeString(*hkeyFlag); err == nil {
@@ -447,6 +449,20 @@ func hashFile(path, algo string) (string, error) {
 			return "", err
 		}
 		sum := t1ha.Sum64(b, 0)
+		return fmt.Sprintf("%016x", sum), nil
+	case "wyhash":
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return "", err
+		}
+		sum := wyhashc.Sum64(b)
+		return fmt.Sprintf("%016x", sum), nil
+	case "rapidhash":
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return "", err
+		}
+		sum := rapidhashc.Sum64(b)
 		return fmt.Sprintf("%016x", sum), nil
 	case "highway64":
 		hw, err := highwayhash.New64(highwayKey)
