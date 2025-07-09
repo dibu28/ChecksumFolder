@@ -79,7 +79,7 @@ jobs:
       - name: Set up Zig
         uses: mlugg/setup-zig@v1
         with:
-          version: 'latest'
+          version: 'master'
       - name: Build binary
         run: |
           NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
