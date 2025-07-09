@@ -18,7 +18,7 @@ CheckSumFolder -dir /path/to/dir [-list hashes.txt] [-hash sha256]
 If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
 operation can be resumed. Use `-hash` to select the hashing algorithm. Allowed
-values are `sha1`, `sha256`, `blake2b`, `blake3`, `xxhash`, `xxh3`, `xxh128`, `t1ha1`, `t1ha2`, `highway64`, `highway128` and `highway256`.
+values are `sha1`, `sha256`, `blake2b`, `blake3`, `xxhash`, `xxh3`, `xxh128`, `t1ha1`, `t1ha2`, `highway64`, `highway128`, `highway256`, `wyhash` and `rapidhash`.
 When using a HighwayHash variant you can provide a custom key via the `-hkey`
 flag. The key must be 32 bytes encoded as hex or base64. If omitted the
 default key `AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=` (base64) is used.
@@ -74,6 +74,11 @@ HighwayHash also ships optimized assembly for x86 and ARM64 CPUs. The
 vectorized code when available. The `t1ha` routines include tuned
 implementations with optional AES and NEON support and fall back to
 portable code on other CPUs. No official armv7 assembly is provided.
+Wyhash and its successor `rapidhash` can use optional C wrappers
+compiled with `-msse2` on Intel or `-mfpu=neon` on ARM. When CGO is
+enabled and the CPU supports these features, the program calls the C
+implementation for additional speed. Otherwise the pure Go fallback is
+used automatically.
 When NEON is detected the program also uses the official BLAKE3 C
 implementation via CGO for additional performance. A working C toolchain
 is required in this case.
