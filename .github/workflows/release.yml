@@ -51,7 +51,7 @@ jobs:
             zig: aarch64-windows-gnu
           - goos: windows
             goarch: 386
-            zig: i386-windows-gnu
+            zig: x86-windows-gnu
           - goos: darwin
             goarch: amd64
             zig: x86_64-macos
@@ -87,9 +87,13 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             NAME="$NAME.exe"
           fi
-          export CGO_ENABLED=1
-          export CC="zig cc -target ${{ matrix.zig }}"
-          export CXX="zig c++ -target ${{ matrix.zig }}"
+          if [ "${{ matrix.goos }}" = "freebsd" ]; then
+            export CGO_ENABLED=0
+          else
+            export CGO_ENABLED=1
+            export CC="zig cc -target ${{ matrix.zig }}"
+            export CXX="zig c++ -target ${{ matrix.zig }}"
+          fi
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -o "$NAME" .
           echo "ASSET_NAME=$NAME" >> $GITHUB_ENV
       - name: Upload binary
