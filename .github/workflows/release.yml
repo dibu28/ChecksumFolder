@@ -36,7 +36,7 @@ jobs:
           - goos: linux
             goarch: arm
             goarm: 7
-            zig: armv7-linux-gnueabihf
+            zig: arm-linux-gnueabihf
           - goos: linux
             goarch: ppc64le
             zig: powerpc64le-linux-gnu
@@ -87,13 +87,17 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             NAME="$NAME.exe"
           fi
-          if [ "${{ matrix.goos }}" = "freebsd" ]; then
-            export CGO_ENABLED=0
-          else
-            export CGO_ENABLED=1
-            export CC="zig cc -target ${{ matrix.zig }}"
-            export CXX="zig c++ -target ${{ matrix.zig }}"
-          fi
+          case "${{ matrix.goos }}" in
+            linux|windows)
+              export CGO_ENABLED=1
+              export CC="zig cc -target ${{ matrix.zig }}"
+              export CXX="zig c++ -target ${{ matrix.zig }}"
+              ;;
+            *)
+              # Cross-compiling to other operating systems uses the pure Go fallback
+              export CGO_ENABLED=0
+              ;;
+          esac
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -o "$NAME" .
           echo "ASSET_NAME=$NAME" >> $GITHUB_ENV
       - name: Upload binary
