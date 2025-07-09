@@ -34,15 +34,9 @@ jobs:
             goarch: arm64
             zig: aarch64-linux-gnu
           - goos: linux
-            goarch: arm64
-            goarm64: v8
-            alias: armv8
-            zig: aarch64-linux-gnu
-          - goos: linux
             goarch: arm
             goarm: 7
             alias: mv78230
-            cpu: cortex-a9
             zig: arm-linux-gnueabihf
           - goos: linux
             goarch: ppc64le
@@ -103,14 +97,9 @@ jobs:
               export CC="zig cc -target ${{ matrix.zig }}"
               export CXX="zig c++ -target ${{ matrix.zig }}"
               if [ "${{ matrix.goarch }}" = "arm" ]; then
-                # clang 17 no longer accepts '-mcpu=armv7'; override with the
-                # selected CPU for ARMv7 targets (default cortex-a7)
-                CPU="${{ matrix.cpu }}"
-                if [ -z "$CPU" ]; then
-                  CPU=cortex-a7
-                fi
-                export CGO_CFLAGS="-mcpu=$CPU"
-                export CGO_CXXFLAGS="-mcpu=$CPU"
+                # Use generic ARMv7 tuning flags
+                export CGO_CFLAGS="-march=armv7-a -mfpu=neon"
+                export CGO_CXXFLAGS="-march=armv7-a -mfpu=neon"
               fi
               ;;
             *)
