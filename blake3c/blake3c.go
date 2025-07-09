@@ -5,8 +5,8 @@ package blake3c
 /*
 #cgo CFLAGS: -O3 -std=c99 -fno-stack-protector -fPIC
 #cgo amd64 CFLAGS: -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512
-#cgo arm64 CFLAGS: -DBLAKE3_USE_NEON
-#cgo arm CFLAGS: -DBLAKE3_USE_NEON -mfpu=neon-vfpv4
+#cgo arm64 CFLAGS: -DBLAKE3_USE_NEON -mcpu=cortex-a53
+#cgo arm CFLAGS: -DBLAKE3_USE_NEON -mcpu=cortex-a7 -mfpu=neon
 #include "blake3.h"
 #include "blake3_impl.h"
 #include "lib/blake3.c"
