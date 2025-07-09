@@ -34,8 +34,15 @@ jobs:
             goarch: arm64
             zig: aarch64-linux-gnu
           - goos: linux
+            goarch: arm64
+            goarm64: v8
+            alias: armv8
+            zig: aarch64-linux-gnu
+          - goos: linux
             goarch: arm
             goarm: 7
+            alias: mv78230
+            cpu: cortex-a9
             zig: arm-linux-gnueabihf
           - goos: linux
             goarch: ppc64le
@@ -81,6 +88,9 @@ jobs:
       - name: Build binary
         run: |
           NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          if [ -n "${{ matrix.alias }}" ]; then
+            NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.alias }}
+          fi
           if [ -n "${{ matrix.goarm }}" ]; then
             NAME="${NAME}v${{ matrix.goarm }}"
           fi
@@ -92,13 +102,23 @@ jobs:
               export CGO_ENABLED=1
               export CC="zig cc -target ${{ matrix.zig }}"
               export CXX="zig c++ -target ${{ matrix.zig }}"
+              if [ "${{ matrix.goarch }}" = "arm" ]; then
+                # clang 17 no longer accepts '-mcpu=armv7'; override with the
+                # selected CPU for ARMv7 targets (default cortex-a7)
+                CPU="${{ matrix.cpu }}"
+                if [ -z "$CPU" ]; then
+                  CPU=cortex-a7
+                fi
+                export CGO_CFLAGS="-mcpu=$CPU"
+                export CGO_CXXFLAGS="-mcpu=$CPU"
+              fi
               ;;
             *)
               # Cross-compiling to other operating systems uses the pure Go fallback
               export CGO_ENABLED=0
               ;;
           esac
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -o "$NAME" .
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} GOARM64=${{ matrix.goarm64 }} go build -o "$NAME" .
           echo "ASSET_NAME=$NAME" >> $GITHUB_ENV
       - name: Upload binary
         run: gh release upload "${{ github.ref_name }}" "${{ env.ASSET_NAME }}" --clobber
