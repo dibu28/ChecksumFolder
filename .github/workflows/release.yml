@@ -37,7 +37,7 @@ jobs:
             goarch: arm
             goarm: 7
             alias: mv78230
-            zig: arm-linux-gnueabihf
+            zig: armv7a-linux-gnueabihf
           - goos: linux
             goarch: ppc64le
             zig: powerpc64le-linux-gnu
@@ -96,10 +96,12 @@ jobs:
               export CGO_ENABLED=1
               export CC="zig cc -target ${{ matrix.zig }}"
               export CXX="zig c++ -target ${{ matrix.zig }}"
+              # Clear any cached compiler flags that might include -mcpu
+              unset CFLAGS CXXFLAGS CGO_CFLAGS CGO_CXXFLAGS
               if [ "${{ matrix.goarch }}" = "arm" ]; then
-                # Use generic ARMv7 tuning flags
-                export CGO_CFLAGS="-march=armv7-a -mfpu=neon"
-                export CGO_CXXFLAGS="-march=armv7-a -mfpu=neon"
+                # Use a specific ARMv7 CPU that Clang accepts
+                export CGO_CFLAGS="-mcpu=cortex-a7 -mfpu=neon"
+                export CGO_CXXFLAGS="$CGO_CFLAGS"
               fi
               ;;
             *)
