@@ -100,7 +100,7 @@ jobs:
               unset CFLAGS CXXFLAGS CGO_CFLAGS CGO_CXXFLAGS
               if [ "${{ matrix.goarch }}" = "arm" ]; then
                 # Use a specific ARMv7 CPU that Clang accepts
-                export CGO_CFLAGS="-mcpu=cortex-a9 -mfpu=neon"
+                export CGO_CFLAGS="-mcpu=cortex_a9 -mfpu=neon"
                 export CGO_CXXFLAGS="$CGO_CFLAGS"
               fi
               ;;
