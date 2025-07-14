@@ -37,7 +37,7 @@ jobs:
             goarch: arm
             goarm: 7
             alias: mv78230
-            zig: arm-linux-gnueabihf
+            zig: armv7a-linux-gnueabihf
           - goos: linux
             goarch: ppc64le
             zig: powerpc64le-linux-gnu
