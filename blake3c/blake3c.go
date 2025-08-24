@@ -1,9 +1,10 @@
-//go:build cgo && (amd64 || arm64)
+//go:build cgo && !arm
 
 package blake3c
 
 /*
-#cgo CFLAGS: -O3 -std=c99 -fno-stack-protector -fPIC
+#cgo CFLAGS: -O3 -std=c99
+#cgo !windows CFLAGS: -fno-stack-protector -fPIC
 #cgo amd64 CFLAGS: -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512
 #cgo arm64 CFLAGS: -DBLAKE3_USE_NEON
 #include "blake3.h"
