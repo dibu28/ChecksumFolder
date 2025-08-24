@@ -1,9 +1,10 @@
-//go:build cgo && (amd64 || arm64)
+//go:build cgo && !arm
 
 package t1ha
 
 /*
-#cgo CFLAGS: -O3 -std=c11 -fno-stack-protector -fPIC
+#cgo CFLAGS: -O3 -std=c11
+#cgo !windows CFLAGS: -fno-stack-protector -fPIC
 #cgo LDFLAGS:
 #include <stdint.h>
 #include "t1ha.h"

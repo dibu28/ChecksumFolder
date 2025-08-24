@@ -1,10 +1,12 @@
-//go:build cgo && (amd64 || arm64)
+//go:build cgo && !arm
 
 package rapidhashc
 
 /*
-#cgo CFLAGS: -O3 -std=c99 -fPIC
+#cgo CFLAGS: -O3 -std=c99
+#cgo !windows CFLAGS: -fPIC
 #cgo amd64 CFLAGS: -msse2
+#cgo 386 CFLAGS: -msse2
 #cgo arm64 CFLAGS:
 #include "rapidhash.h"
 
