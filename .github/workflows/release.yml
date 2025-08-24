@@ -78,7 +78,7 @@ jobs:
         with:
           go-version: '1.23.x'
       - name: Set up Zig
-        uses: mlugg/setup-zig@v2.0.4
+        uses: mlugg/setup-zig@v2.0.5
       - name: Build binary
         run: |
           NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
