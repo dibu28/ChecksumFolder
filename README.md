@@ -8,8 +8,8 @@ hash algorithm can be changed.
 
 ### Build Requirements
 Building with NEON support requires CGO enabled and a working C compiler.
-On 32-bit ARM (armv7) the C and C++ implementations are disabled and the
-program always uses pure Go fallbacks.
+The optional C implementations are only built on amd64 and arm64. Other
+architectures, including 32-bit ARM (armv7), always use the pure Go fallbacks.
 
 ## Usage
 
@@ -77,15 +77,15 @@ vectorized code when available. The `t1ha` routines include tuned
 implementations with optional AES and NEON support and fall back to
 portable code on other CPUs. No official armv7 assembly is provided.
 Wyhash and its successor `rapidhash` can use optional C wrappers
-compiled with `-msse2` on Intel or `-mfpu=neon` on ARM64. When CGO is
-enabled and the CPU supports these features, the program calls the C
-implementation for additional speed. Otherwise the pure Go fallback is
-used automatically. On 32-bit ARM (armv7) these C paths are disabled and
-the pure Go implementations are always used.
+compiled with `-msse2` on Intel or `-mfpu=neon` on ARM64. These wrappers
+are only built on amd64 and arm64. When CGO is enabled and the CPU
+supports the required features, the program calls the C implementation
+for additional speed. Otherwise the pure Go fallback is used
+automatically.
 When NEON is detected the program also uses the official BLAKE3 C
 implementation via CGO for additional performance. The C implementation
-is not built on armv7 where the pure Go version is used. A working C
-toolchain is required in this case.
+is only built on amd64 and arm64; other platforms use the pure Go
+version. A working C toolchain is required in this case.
 On older CPUs without these capabilities it transparently falls back to Go's
 standard implementations. This happens automatically at startup and
 works across different architectures.
