@@ -1,3 +1,5 @@
+//go:build cgo && (amd64 || arm64)
+
 package t1ha
 
 /*

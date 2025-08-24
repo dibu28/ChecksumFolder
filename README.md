@@ -8,6 +8,8 @@ hash algorithm can be changed.
 
 ### Build Requirements
 Building with NEON support requires CGO enabled and a working C compiler.
+On 32-bit ARM (armv7) the C and C++ implementations are disabled and the
+program always uses pure Go fallbacks.
 
 ## Usage
 
@@ -28,7 +30,7 @@ HighwayHash assembly accelerates only x86 and ARM64 platforms.
 ## TODO
 
 - add option to save to jsol format
-Use `-progress` to periodically print how many files have been processed.
+Use `-progress` to periodically print how many files have been processed. When enabled, the total time taken is printed after completion.
 Use `-json` to write results in JSONL format where each line is a JSON object
 containing `hash` and `path` fields.
 
@@ -50,7 +52,7 @@ allows verifying files across machines even when the root folders differ.
 
 Use `-verbose` to print the status of every file. Without it, only mismatches
 are printed or a message that everything matches. Add `-progress` to show
-verification progress. Verification runs in parallel across all CPU cores to
+verification progress. When enabled, the total time taken is printed after completion. Verification runs in parallel across all CPU cores to
 speed up processing on large directory trees.
 Use `-json` when verifying to read the checksum list in JSONL format.
 When verifying with a HighwayHash algorithm pass the same key using `-hkey`. If
@@ -75,13 +77,15 @@ vectorized code when available. The `t1ha` routines include tuned
 implementations with optional AES and NEON support and fall back to
 portable code on other CPUs. No official armv7 assembly is provided.
 Wyhash and its successor `rapidhash` can use optional C wrappers
-compiled with `-msse2` on Intel or `-mfpu=neon` on ARM. When CGO is
+compiled with `-msse2` on Intel or `-mfpu=neon` on ARM64. When CGO is
 enabled and the CPU supports these features, the program calls the C
 implementation for additional speed. Otherwise the pure Go fallback is
-used automatically.
+used automatically. On 32-bit ARM (armv7) these C paths are disabled and
+the pure Go implementations are always used.
 When NEON is detected the program also uses the official BLAKE3 C
-implementation via CGO for additional performance. A working C toolchain
-is required in this case.
+implementation via CGO for additional performance. The C implementation
+is not built on armv7 where the pure Go version is used. A working C
+toolchain is required in this case.
 On older CPUs without these capabilities it transparently falls back to Go's
 standard implementations. This happens automatically at startup and
 works across different architectures.

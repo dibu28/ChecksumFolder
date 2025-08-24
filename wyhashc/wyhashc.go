@@ -1,4 +1,4 @@
-//go:build cgo && (amd64 || arm64 || arm)
+//go:build cgo && (amd64 || arm64)
 
 package wyhashc
 
@@ -6,7 +6,6 @@ package wyhashc
 #cgo CFLAGS: -O3 -std=c99 -fPIC
 #cgo amd64 CFLAGS: -msse2
 #cgo arm64 CFLAGS:
-#cgo arm CFLAGS: -march=armv7-a -mfpu=neon
 #include "wyhash.h"
 
 static inline uint64_t wyhash_go(const void* data, size_t len) {

@@ -84,7 +84,8 @@ func main() {
 }
 
 func generateChecksums(dir, output string, progress, jsonOut bool, algo string) error {
-	processed := map[string]bool{}
+        start := time.Now()
+        processed := map[string]bool{}
 	toFile := output != ""
 	var file *os.File
 	var writer *bufio.Writer
@@ -210,18 +211,22 @@ func generateChecksums(dir, output string, progress, jsonOut bool, algo string) 
 		file.Sync()
 	}
 	mu.Unlock()
-	if ticker != nil {
-		ticker.Stop()
-		fmt.Printf("%d/%d\n", processedCount, total)
-	}
-	return nil
+        if ticker != nil {
+                ticker.Stop()
+                fmt.Printf("%d/%d\n", processedCount, total)
+        }
+        if progress {
+                fmt.Printf("Time elapsed: %s\n", time.Since(start).Round(time.Second))
+        }
+        return nil
 }
 
 func verifyChecksums(dir, listfile string, verbose, progress, jsonIn bool, algo string) error {
-	type entry struct {
-		hash string
-		path string
-	}
+        start := time.Now()
+        type entry struct {
+                hash string
+                path string
+        }
 	var entries []entry
 
 	f, err := os.Open(listfile)
@@ -386,8 +391,11 @@ func verifyChecksums(dir, listfile string, verbose, progress, jsonIn bool, algo 
 			fmt.Println("All files match")
 		}
 	}
-	fmt.Printf("Total:%d Match:%d Mismatch:%d\n", total, match, mismatch)
-	return nil
+        fmt.Printf("Total:%d Match:%d Mismatch:%d\n", total, match, mismatch)
+        if progress {
+                fmt.Printf("Time elapsed: %s\n", time.Since(start).Round(time.Second))
+        }
+        return nil
 }
 
 func hashFile(path, algo string) (string, error) {
