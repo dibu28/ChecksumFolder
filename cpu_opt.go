@@ -29,7 +29,7 @@ func init() {
 		} else {
 			useStdSHA256 = true
 		}
-	case "arm64", "arm":
+	case "arm64":
 		if cpuid.CPU.Supports(cpuid.ASIMD) {
 			useBlake3C = true
 			useWyhashC = true
@@ -37,6 +37,8 @@ func init() {
 		} else {
 			useStdSHA256 = true
 		}
+	case "arm":
+		useStdSHA256 = true
 	default:
 		// Unknown architecture, use conservative default
 		useStdSHA256 = true
