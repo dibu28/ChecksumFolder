@@ -81,6 +81,18 @@ jobs:
         uses: mlugg/setup-zig@v2.0.5
       - name: Build binary
         run: |
+          case "${{ matrix.goarch }}" in
+            amd64|386)
+              export RUSTFLAGS="-C target-feature=+aes,+sse2"
+              ;;
+            arm64|arm)
+              export RUSTFLAGS="-C target-feature=+aes,+neon"
+              ;;
+            *)
+              unset RUSTFLAGS
+              ;;
+          esac
+
           NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
           if [ -n "${{ matrix.alias }}" ]; then
             NAME=CheckSumFolder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.alias }}
