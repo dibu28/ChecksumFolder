@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/md5"
 	"crypto/sha1"
 	stdsha256 "crypto/sha256"
 	"encoding/base64"
@@ -52,7 +53,7 @@ func main() {
 	progress := flag.Bool("progress", false, "show progress updates")
 	jsonl := flag.Bool("json", false, "output in JSONL format")
 	hkeyFlag := flag.String("hkey", defaultHighwayKey, "hex or base64 HighwayHash key")
-	algo := flag.String("hash", "sha1", "hash algorithm: sha1|sha256|blake2b|blake3|xxhash|xxh3|xxh128|t1ha1|t1ha2|highway64|highway128|highway256|wyhash|rapidhash")
+	algo := flag.String("hash", "sha1", "hash algorithm: md5|sha1|sha256|blake2b|blake3|xxhash|xxh3|xxh128|t1ha1|t1ha2|highway64|highway128|highway256|wyhash|rapidhash")
 	flag.Parse()
 
 	if k, err := hex.DecodeString(*hkeyFlag); err == nil {
@@ -427,6 +428,8 @@ func hashFile(path, algo string) (string, error) {
 
 	var h hash.Hash
 	switch alg {
+	case "md5":
+		h = md5.New()
 	case "sha1":
 		h = sha1.New()
 	case "sha256":
