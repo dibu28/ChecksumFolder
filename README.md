@@ -20,7 +20,7 @@ CheckSumFolder -dir /path/to/dir [-list hashes.txt] [-hash sha256]
 If `-list` is omitted the results are printed to the console. When a file is
 specified and it already contains results, existing entries are skipped so the
 operation can be resumed. Use `-hash` to select the hashing algorithm. Allowed
-values are `sha1`, `sha256`, `blake2b`, `blake3`, `xxhash`, `xxh3`, `xxh128`, `t1ha1`, `t1ha2`, `highway64`, `highway128`, `highway256`, `wyhash` and `rapidhash`.
+values are `md5`, `sha1`, `sha256`, `blake2b`, `blake3`, `xxhash`, `xxh3`, `xxh128`, `t1ha1`, `t1ha2`, `highway64`, `highway128`, `highway256`, `wyhash` and `rapidhash`.
 When using a HighwayHash variant you can provide a custom key via the `-hkey`
 flag. The key must be 32 bytes encoded as hex or base64. If omitted the
 default key `AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=` (base64) is used.
